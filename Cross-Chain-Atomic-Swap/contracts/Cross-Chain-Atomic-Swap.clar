@@ -391,3 +391,38 @@
     (ok true)
   )
 )
+
+;; Get swap details by ID
+(define-read-only (get-swap-details (swap-id (buff 32)))
+  (map-get? swaps { swap-id: swap-id })
+)
+
+;; Get proof verification status
+(define-read-only (get-proof-status (swap-id (buff 32)))
+  (map-get? confidential-proofs { swap-id: swap-id })
+)
+
+;; Get mixing pool details
+(define-read-only (get-mixing-pool-details (pool-id (buff 32)))
+  (map-get? mixing-pools { pool-id: pool-id })
+)
+
+;; Get multi-sig approval status
+(define-read-only (get-multi-sig-approval (swap-id (buff 32)) (signer principal))
+  (map-get? multi-sig-approvals { swap-id: swap-id, signer: signer })
+)
+
+;; Check if a swap can be claimed
+(define-read-only (is-swap-claimable (swap-id (buff 32)))
+  (match (map-get? swaps { swap-id: swap-id })
+    swap (and 
+           (not (get claimed swap)) 
+           (not (get refunded swap)) 
+           (not (is-swap-expired (get expiration-height swap)))
+           (if (> (get multi-sig-required swap) u1)
+             (>= (get multi-sig-provided swap) (get multi-sig-required swap))
+             true)
+         )
+    false
+  )
+)
